@@ -773,36 +773,38 @@ def about():
 def install_shell_completion(shell: str):
     """Installs tab auto-completion for your shell."""
 
-    import subprocess
     from maestral.utils.appdirs import get_home_dir, get_data_path
 
-    out_file = get_data_path('maestral', f'maestral-complete-{shell}.sh')
-
-    subprocess.run(f'_MAESTRAL_COMPLETE=source_{shell} maestral > {out_file}')
+    script = os.popen(f'_MAESTRAL_COMPLETE=source_{shell} maestral').read()
 
     home = get_home_dir()
 
     if shell == 'fish':
-        with open(out_file) as f:
-            script = f.read()
-        path = home + '/.config/fish/completions/maestral.fish'
-        mode = 'w'
+        script_path = home + '/.config/fish/completions/maestral.fish'
+        rc_path = None
+        rc_script = None
     elif shell == 'bash':
-        script = f'. {out_file}'
-        path = home + '/.bash_completion'
-        mode = 'a'
-    else:
-        script = f'\nautoload -Uz compinit && compinit\n. {out_file}'
-        path = home + '/.zshrc'
-        mode = 'a'
+        script_path = home + '/.local/share/bash-completion/completions/maestral.sh'
+        rc_path = home + '/.bashrc'
+        rc_script = f'\n. {script_path!r}'
 
-    d = os.path.dirname(path)
+    else:
+        script_path = get_data_path('maestral', 'maestral-completion-zsh.sh')
+        rc_path = home + '/.zshrc'
+        rc_script = f'\nautoload -Uz compinit && compinit\n. {script_path!r}'
+
+    d = os.path.dirname(script_path)
     if not os.path.exists(d):
         os.makedirs(d)
 
-    with open(path, mode) as f:
+    with open(script_path, 'w') as f:
         f.write(script)
-        f.write("\n")
+        f.write('\n')
+
+    if rc_path:
+        with open(rc_path, 'a') as f:
+            f.write(rc_script)
+            f.write('\n')
 
 
 # ========================================================================================
