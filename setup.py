@@ -42,6 +42,7 @@ install_requires = [
     'Pyro5>=5.7',
     'requests',
     'rubicon-objc>=0.3.1;sys_platform=="darwin"',
+    'shellingham',
     'sdnotify',
     'setuptools',
     'u-msgpack-python',

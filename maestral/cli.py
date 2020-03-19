@@ -768,6 +768,53 @@ def about():
     click.echo('')
 
 
+@main.command(help_priority=22)
+def install_shell_completion():
+    """Installs tab auto-completion for your shell."""
+
+    import shellingham
+    from shellingham import ShellDetectionFailure
+    from click._bashcomplete import get_completion_script, _completion_scripts
+
+    from maestral.utils.appdirs import get_home_dir
+
+    our_supported = {'bash', 'fish', 'zsh'}
+    click_supported = set(_completion_scripts.keys())
+    supported = click_supported.intersection(our_supported)
+
+    try:
+        shell, path = shellingham.detect_shell()
+    except ShellDetectionFailure:
+        raise click.ClickException('Could not determine current shell.')
+    else:
+        if shell not in supported:
+            raise click.ClickException('Your current shell is not supported. '
+                                       f'Supported shells are: {", ".join(supported)}')
+
+        script = '\n' + get_completion_script('maestral', '_MAESTRAL_COMPLETE', shell)
+
+        home = get_home_dir()
+
+        if shell == 'fish':
+            path = home + '/.config/fish/completions/maestral.fish'
+            mode = 'w'
+        elif shell == 'bash':
+            path = home + '/.bash_completion'
+            mode = 'a'
+        else:
+            script = '\nautoload -Uz compinit && compinit\n' + script
+            path = home + '/.zshrc'
+            mode = 'a'
+
+        d = os.path.dirname(path)
+        if not os.path.exists(d):
+            os.makedirs(d)
+
+        with open(path, mode) as f:
+            f.write(script)
+            f.write("\n")
+
+
 # ========================================================================================
 # Exclude commands
 # ========================================================================================
